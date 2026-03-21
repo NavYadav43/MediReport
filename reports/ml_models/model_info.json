@@ -1,0 +1,1 @@
+{"accuracy": 0.897, "n_samples": 5000, "n_features": 16, "params": ["hemoglobin", "wbc", "platelets", "rbc", "fasting_glucose", "total_cholesterol", "hdl", "ldl", "triglycerides", "tsh", "t3", "t4", "urine_glucose", "urine_protein", "urine_ph", "creatinine"]}

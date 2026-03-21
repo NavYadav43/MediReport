@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% block title %}Upload Report — MediReport{% endblock %}
+{% block extra_css %}
+<style>
+.upload-page { max-width: 700px; margin: 0 auto; }
+.page-header { margin-bottom: 2rem; }
+.page-header h1 { font-size: 1.8rem; font-weight: 700; }
+.page-header p { color: var(--text-muted); margin-top: 0.25rem; }
+.upload-zone {
+    border: 2px dashed var(--border); border-radius: 20px;
+    padding: 3rem; text-align: center; cursor: pointer; transition: all 0.3s;
+    background: var(--surface2); margin-bottom: 1rem;
+}
+.upload-zone:hover, .upload-zone.dragging { border-color: var(--accent); background: rgba(0,200,255,0.05); }
+.upload-zone .upload-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+.upload-zone h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+.upload-zone p { color: var(--text-muted); font-size: 0.875rem; }
+.file-selected { display: none; margin-bottom: 1rem; }
+.file-info {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(0,200,255,0.1); border: 1px solid rgba(0,200,255,0.3);
+    border-radius: 12px; padding: 12px 16px;
+}
+.file-icon { font-size: 1.5rem; }
+.file-name { font-weight: 600; font-size: 0.9rem; }
+.file-size { color: var(--text-muted); font-size: 0.8rem; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-fields { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
+.analyzing-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: rgba(5,11,20,0.9); backdrop-filter: blur(10px);
+    align-items: center; justify-content: center; flex-direction: column;
+}
+.analyzing-overlay.active { display: flex; }
+.scan-animation { position: relative; width: 120px; height: 120px; margin-bottom: 2rem; }
+.scan-ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: var(--accent); animation: spin 1s linear infinite;
+}
+.scan-ring:nth-child(2) { inset: 12px; border-top-color: var(--accent2); animation-duration: 1.4s; animation-direction: reverse; }
+.scan-ring:nth-child(3) { inset: 24px; border-top-color: rgba(0,200,255,0.5); animation-duration: 1.8s; }
+.scan-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.analyzing-text h2 { text-align: center; font-size: 1.5rem; font-weight: 700; }
+.analyzing-text p { text-align: center; color: var(--text-muted); margin-top: 0.5rem; }
+.progress-steps { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.5rem; }
+.progress-step { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 8px; font-size: 0.875rem; color: var(--text-muted); }
+.progress-step.active { color: var(--accent); background: rgba(0,200,255,0.1); }
+.progress-step.done { color: var(--accent2); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="main-content">
+    <div class="upload-page">
+        <div class="page-header">
+            <h1>📤 Upload Medical Report</h1>
+            <p>Upload any medical report for instant AI-powered analysis</p>
+        </div>
+
+        <div class="card">
+            <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png,.webp" style="display:none" onchange="handleFileSelect(this)">
+
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+                 ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="this.classList.remove('dragging')">
+                <div class="upload-icon">📄</div>
+                <h3>Drop your report here</h3>
+                <p>or click to browse files</p>
+                <p style="margin-top:1rem;font-size:0.8rem;color:var(--text-dim)">
+                    Supports: PDF, JPG, PNG, WEBP — Max 10MB
+                </p>
+            </div>
+
+            <div class="file-selected" id="file-selected">
+                <div class="file-info">
+                    <div class="file-icon" id="file-icon">📄</div>
+                    <div>
+                        <div class="file-name" id="file-name"></div>
+                        <div class="file-size" id="file-size"></div>
+                    </div>
+                    <button onclick="clearFile()" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px">×</button>
+                </div>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" id="upload-form" class="form-fields" onsubmit="showAnalyzing()">
+                {% csrf_token %}
+                <input type="file" name="file" id="hidden-file" style="display:none" required>
+
+                <div class="form-group">
+                    <label>Report Title *</label>
+                    <input type="text" name="title" class="form-control" placeholder="e.g., Blood Test March 2025" required>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Report Type</label>
+                        <select name="report_type" class="form-control">
+                            {% for value, label in report_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Patient Age</label>
+                        <input type="number" name="patient_age" class="form-control" placeholder="Age in years" min="0" max="150">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Patient Name (optional)</label>
+                    <input type="text" name="patient_name" class="form-control" placeholder="Patient's full name">
+                </div>
+
+                <div class="form-group">
+                    <label>Additional Notes</label>
+                    <textarea name="notes" class="form-control" rows="3" placeholder="Any additional context or symptoms..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="justify-content:center;padding:14px;font-size:1rem" id="submit-btn" disabled>
+                    <i class="fas fa-brain"></i> Analyze with AI
+                </button>
+                <p style="text-align:center;color:var(--text-dim);font-size:0.8rem;margin-top:0.5rem">
+                    Analysis typically takes 10-30 seconds
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Analyzing overlay -->
+<div class="analyzing-overlay" id="analyzing-overlay">
+    <div class="scan-animation">
+        <div class="scan-ring"></div>
+        <div class="scan-ring"></div>
+        <div class="scan-ring"></div>
+        <div class="scan-icon">🔬</div>
+    </div>
+    <div class="analyzing-text">
+        <h2>Analyzing Your Report</h2>
+        <p>Gemini AI is reading and interpreting your medical data...</p>
+    </div>
+    <div class="progress-steps">
+        <div class="progress-step active" id="step1"><i class="fas fa-file-upload"></i> Uploading file...</div>
+        <div class="progress-step" id="step2"><i class="fas fa-brain"></i> AI reading report...</div>
+        <div class="progress-step" id="step3"><i class="fas fa-pills"></i> Generating insights...</div>
+        <div class="progress-step" id="step4"><i class="fas fa-check"></i> Finalizing results...</div>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+let selectedFile = null;
+
+function handleFileSelect(input) {
+    if (input.files && input.files[0]) {
+        setFile(input.files[0]);
+    }
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.add('dragging');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+}
+
+function setFile(file) {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    const allowedExt = ['.pdf', '.jpg', '.jpeg', '.png', '.webp'];
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowedExt.includes(ext)) {
+        alert('Please upload a PDF, JPG, PNG, or WEBP file.');
+        return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB.');
+        return;
+    }
+    selectedFile = file;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('hidden-file').files = dt.files;
+    document.getElementById('file-icon').textContent = file.type === 'application/pdf' ? '📄' : '🖼️';
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+    document.getElementById('file-selected').style.display = 'block';
+    document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('submit-btn').disabled = false;
+}
+
+function clearFile() {
+    selectedFile = null;
+    document.getElementById('hidden-file').value = '';
+    document.getElementById('file-input').value = '';
+    document.getElementById('file-selected').style.display = 'none';
+    document.getElementById('upload-zone').style.display = 'block';
+    document.getElementById('submit-btn').disabled = true;
+}
+
+function showAnalyzing() {
+    document.getElementById('analyzing-overlay').classList.add('active');
+    const steps = ['step1', 'step2', 'step3', 'step4'];
+    steps.forEach((id, i) => {
+        setTimeout(() => {
+            if (i > 0) document.getElementById(steps[i-1]).className = 'progress-step done';
+            document.getElementById(id).className = 'progress-step active';
+        }, i * 4000);
+    });
+}
+</script>
+{% endblock %}

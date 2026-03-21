@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}Manual Report Entry — MediReport{% endblock %}
+{% block extra_css %}
+<style>
+.page-header { margin-bottom: 2rem; }
+.page-header h1 { font-size: 1.8rem; font-weight: 700; }
+.page-header p { color: var(--text-muted); margin-top: 0.25rem; }
+.tab-bar { display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.tab-btn {
+    padding: 8px 20px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text-muted); cursor: pointer;
+    font-family: var(--font); font-size: 0.875rem; font-weight: 600; transition: all 0.2s;
+}
+.tab-btn.active { background: linear-gradient(135deg, var(--accent), #0099cc); color: #050b14; border-color: transparent; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.param-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.param-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 1rem;
+}
+.param-label { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.param-unit { color: var(--text-dim); font-weight: 400; }
+.param-range { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+.param-input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; color: var(--text);
+    font-family: var(--font); font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+}
+.param-input:focus { border-color: var(--accent); }
+.param-input.low { border-color: var(--accent-warn); }
+.param-input.high { border-color: var(--accent3); }
+.param-input.normal { border-color: var(--accent2); }
+.submit-area { margin-top: 2rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.info-box {
+    background: rgba(0,200,255,0.08); border: 1px solid rgba(0,200,255,0.2);
+    border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--text-muted);
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="main-content" style="max-width:1100px;margin:0 auto">
+    <div class="page-header">
+        <h1>🔬 Manual Report Entry</h1>
+        <p>Enter your report values manually for instant ML analysis — no API needed</p>
+    </div>
+
+    <div class="info-box">
+        <strong>💡 How it works:</strong> Enter the values from your medical report below. Our locally trained ML model (Random Forest, trained on 5,000 synthetic patient records) will instantly analyze your values, assess risk level, and provide detailed findings, medications, precautions, and lifestyle advice.
+    </div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="showTab('blood')">🩸 Blood (CBC)</button>
+        <button class="tab-btn" onclick="showTab('lipid')">🫀 Lipid Profile</button>
+        <button class="tab-btn" onclick="showTab('thyroid')">🦋 Thyroid</button>
+        <button class="tab-btn" onclick="showTab('urine')">💧 Urine Test</button>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="active_tab" id="active_tab_input" value="blood">
+
+        <!-- BLOOD TAB -->
+        <div class="tab-content active" id="tab-blood">
+            <div class="card" style="margin-bottom:1rem">
+                <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:1rem;font-weight:700">Complete Blood Count (CBC)</div>
+                <div class="param-grid">
+                    <div class="param-card">
+                        <div class="param-label">Hemoglobin <span class="param-unit">g/dL</span></div>
+                        <input type="number" step="0.1" name="hemoglobin" class="param-input" placeholder="e.g. 14.5" oninput="checkRange(this,12,17.5)">
+                        <div class="param-range">Normal: 12.0 – 17.5 g/dL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">WBC Count <span class="param-unit">cells/µL</span></div>
+                        <input type="number" step="1" name="wbc" class="param-input" placeholder="e.g. 7500" oninput="checkRange(this,4000,11000)">
+                        <div class="param-range">Normal: 4,000 – 11,000 cells/µL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Platelet Count <span class="param-unit">cells/µL</span></div>
+                        <input type="number" step="1" name="platelets" class="param-input" placeholder="e.g. 250000" oninput="checkRange(this,150000,400000)">
+                        <div class="param-range">Normal: 150,000 – 400,000 cells/µL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">RBC Count <span class="param-unit">million/µL</span></div>
+                        <input type="number" step="0.01" name="rbc" class="param-input" placeholder="e.g. 4.8" oninput="checkRange(this,4.2,5.9)">
+                        <div class="param-range">Normal: 4.2 – 5.9 million/µL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Fasting Blood Sugar <span class="param-unit">mg/dL</span></div>
+                        <input type="number" step="0.1" name="fasting_glucose" class="param-input" placeholder="e.g. 95" oninput="checkRange(this,70,100)">
+                        <div class="param-range">Normal: 70 – 100 mg/dL</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIPID TAB -->
+        <div class="tab-content" id="tab-lipid">
+            <div class="card" style="margin-bottom:1rem">
+                <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:1rem;font-weight:700">Lipid Profile</div>
+                <div class="param-grid">
+                    <div class="param-card">
+                        <div class="param-label">Total Cholesterol <span class="param-unit">mg/dL</span></div>
+                        <input type="number" step="0.1" name="total_cholesterol" class="param-input" placeholder="e.g. 185" oninput="checkRange(this,0,200)">
+                        <div class="param-range">Normal: &lt; 200 mg/dL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">HDL (Good Cholesterol) <span class="param-unit">mg/dL</span></div>
+                        <input type="number" step="0.1" name="hdl" class="param-input" placeholder="e.g. 55" oninput="checkRange(this,40,999)">
+                        <div class="param-range">Normal: &gt; 40 mg/dL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">LDL (Bad Cholesterol) <span class="param-unit">mg/dL</span></div>
+                        <input type="number" step="0.1" name="ldl" class="param-input" placeholder="e.g. 90" oninput="checkRange(this,0,100)">
+                        <div class="param-range">Normal: &lt; 100 mg/dL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Triglycerides <span class="param-unit">mg/dL</span></div>
+                        <input type="number" step="0.1" name="triglycerides" class="param-input" placeholder="e.g. 130" oninput="checkRange(this,0,150)">
+                        <div class="param-range">Normal: &lt; 150 mg/dL</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- THYROID TAB -->
+        <div class="tab-content" id="tab-thyroid">
+            <div class="card" style="margin-bottom:1rem">
+                <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:1rem;font-weight:700">Thyroid Function Tests</div>
+                <div class="param-grid">
+                    <div class="param-card">
+                        <div class="param-label">TSH <span class="param-unit">µIU/mL</span></div>
+                        <input type="number" step="0.01" name="tsh" class="param-input" placeholder="e.g. 2.5" oninput="checkRange(this,0.4,4.0)">
+                        <div class="param-range">Normal: 0.4 – 4.0 µIU/mL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">T3 (Triiodothyronine) <span class="param-unit">ng/dL</span></div>
+                        <input type="number" step="0.1" name="t3" class="param-input" placeholder="e.g. 130" oninput="checkRange(this,80,200)">
+                        <div class="param-range">Normal: 80 – 200 ng/dL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">T4 (Thyroxine) <span class="param-unit">µg/dL</span></div>
+                        <input type="number" step="0.1" name="t4" class="param-input" placeholder="e.g. 8.5" oninput="checkRange(this,4.5,12.5)">
+                        <div class="param-range">Normal: 4.5 – 12.5 µg/dL</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- URINE TAB -->
+        <div class="tab-content" id="tab-urine">
+            <div class="card" style="margin-bottom:1rem">
+                <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:1rem;font-weight:700">Urine Analysis</div>
+                <div class="param-grid">
+                    <div class="param-card">
+                        <div class="param-label">Urine Glucose <span class="param-unit">mg/dL</span></div>
+                        <input type="number" step="0.1" name="urine_glucose" class="param-input" placeholder="Normal: 0 (absent)" oninput="checkRange(this,0,0)">
+                        <div class="param-range">Normal: 0 mg/dL (absent)</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Urine Protein <span class="param-unit">mg/dL</span></div>
+                        <input type="number" step="0.1" name="urine_protein" class="param-input" placeholder="e.g. 10" oninput="checkRange(this,0,14)">
+                        <div class="param-range">Normal: 0 – 14 mg/dL</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Urine pH <span class="param-unit">pH</span></div>
+                        <input type="number" step="0.1" name="urine_ph" class="param-input" placeholder="e.g. 6.0" oninput="checkRange(this,4.5,8.0)">
+                        <div class="param-range">Normal: 4.5 – 8.0</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Creatinine (Serum) <span class="param-unit">mg/dL</span></div>
+                        <input type="number" step="0.01" name="creatinine" class="param-input" placeholder="e.g. 0.9" oninput="checkRange(this,0.6,1.2)">
+                        <div class="param-range">Normal: 0.6 – 1.2 mg/dL</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+            <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:1rem;font-weight:700">Report Details</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
+                <div class="form-group">
+                    <label>Report Title *</label>
+                    <input type="text" name="title" class="form-control" placeholder="e.g. Blood Test June 2025" required>
+                </div>
+                <div class="form-group">
+                    <label>Patient Name</label>
+                    <input type="text" name="patient_name" class="form-control" placeholder="Full name">
+                </div>
+                <div class="form-group">
+                    <label>Patient Age</label>
+                    <input type="number" name="patient_age" class="form-control" placeholder="Age" min="0" max="150">
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-area">
+            <button type="submit" class="btn btn-primary" style="padding:14px 32px;font-size:1rem">
+                <i class="fas fa-brain"></i> Analyze with ML Model
+            </button>
+            <span style="color:var(--text-muted);font-size:0.875rem">⚡ Instant results — no API needed</span>
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    event.target.classList.add('active');
+    document.getElementById('active_tab_input').value = tab;
+}
+
+function checkRange(input, low, high) {
+    const val = parseFloat(input.value);
+    if (isNaN(val) || input.value === '') {
+        input.className = 'param-input';
+        return;
+    }
+    if (high === 0) {
+        input.className = val > 0 ? 'param-input high' : 'param-input normal';
+    } else if (val < low) {
+        input.className = 'param-input low';
+    } else if (val > high) {
+        input.className = 'param-input high';
+    } else {
+        input.className = 'param-input normal';
+    }
+}
+</script>
+{% endblock %}
