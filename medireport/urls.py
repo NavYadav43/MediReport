@@ -6,4 +6,6 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('reports.urls')),
+    path('', include('wiki.urls')),
+    path('', include('symptom_checker.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

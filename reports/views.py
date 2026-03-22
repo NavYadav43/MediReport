@@ -300,3 +300,184 @@ def manual_entry(request):
         return redirect('report_detail', pk=report.pk)
     
     return render(request, 'manual_entry.html')
+
+
+@login_required
+def download_report_pdf(request, pk):
+    """Generate and download a PDF of the analysis report."""
+    from django.http import HttpResponse
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch, cm
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    import io
+
+    report = get_object_or_404(MedicalReport, pk=pk, user=request.user)
+
+    def parse(field):
+        try:
+            return json.loads(field) if field else []
+        except:
+            return []
+
+    key_findings   = parse(report.key_findings)
+    medications    = parse(report.medications)
+    precautions    = parse(report.precautions)
+    prevention     = parse(report.prevention)
+    lifestyle      = parse(report.lifestyle_advice)
+    doctor_signs   = parse(report.when_to_see_doctor)
+    raw            = json.loads(report.raw_analysis) if report.raw_analysis else {}
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            rightMargin=2*cm, leftMargin=2*cm,
+                            topMargin=2*cm, bottomMargin=2*cm)
+
+    styles = getSampleStyleSheet()
+    TEAL   = colors.HexColor('#00c8ff')
+    GREEN  = colors.HexColor('#00ff9d')
+    RED    = colors.HexColor('#ff6b6b')
+    ORANGE = colors.HexColor('#ffb347')
+    DARK   = colors.HexColor('#0d1825')
+    GREY   = colors.HexColor('#6b8fa8')
+
+    title_style = ParagraphStyle('Title', parent=styles['Title'],
+                                  fontSize=22, textColor=TEAL, spaceAfter=4,
+                                  alignment=TA_CENTER, fontName='Helvetica-Bold')
+    sub_style   = ParagraphStyle('Sub', parent=styles['Normal'],
+                                  fontSize=10, textColor=GREY, alignment=TA_CENTER, spaceAfter=2)
+    h2_style    = ParagraphStyle('H2', parent=styles['Heading2'],
+                                  fontSize=13, textColor=TEAL, spaceBefore=14, spaceAfter=6,
+                                  fontName='Helvetica-Bold')
+    body_style  = ParagraphStyle('Body', parent=styles['Normal'],
+                                  fontSize=10, textColor=colors.HexColor('#e2eaf4'),
+                                  spaceAfter=4, leading=16)
+    bold_style  = ParagraphStyle('Bold', parent=body_style,
+                                  fontName='Helvetica-Bold', textColor=colors.white)
+    small_style = ParagraphStyle('Small', parent=body_style,
+                                  fontSize=8, textColor=GREY)
+
+    RISK_COLOR = {'low': GREEN, 'medium': ORANGE, 'high': RED, 'critical': RED}
+    risk_color = RISK_COLOR.get(report.risk_level, GREY)
+
+    story = []
+
+    # Header
+    story.append(Paragraph("🏥 MediReport", title_style))
+    story.append(Paragraph("AI-Powered Medical Report Analysis", sub_style))
+    story.append(HRFlowable(width="100%", thickness=1, color=TEAL, spaceAfter=10))
+
+    # Report info table
+    info_data = [
+        ['Report Title', report.title],
+        ['Report Type', report.get_report_type_display()],
+        ['Patient Name', report.patient_name or request.user.get_full_name() or request.user.username],
+        ['Patient Age', str(report.patient_age) + ' years' if report.patient_age else '—'],
+        ['Date', report.uploaded_at.strftime('%B %d, %Y')],
+        ['Risk Level', report.risk_level.upper() if report.risk_level else '—'],
+        ['Status', report.status.title()],
+    ]
+    info_table = Table(info_data, colWidths=[4*cm, 13*cm])
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#112030')),
+        ('BACKGROUND', (1,0), (1,-1), colors.HexColor('#0d1825')),
+        ('TEXTCOLOR', (0,0), (0,-1), TEAL),
+        ('TEXTCOLOR', (1,0), (1,-1), colors.HexColor('#e2eaf4')),
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('ROWBACKGROUNDS', (0,0), (-1,-1), [colors.HexColor('#112030'), colors.HexColor('#0d1825')]),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#1a3040')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('PADDING', (0,0), (-1,-1), 8),
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 12))
+
+    # Summary
+    if report.analysis_summary:
+        story.append(Paragraph("📋 Analysis Summary", h2_style))
+        story.append(Paragraph(report.analysis_summary, body_style))
+        story.append(Spacer(1, 8))
+
+    # Key Findings table
+    if key_findings:
+        story.append(Paragraph("🔬 Key Findings", h2_style))
+        table_data = [['Parameter', 'Your Value', 'Normal Range', 'Status', 'Interpretation']]
+        for f in key_findings:
+            status = f.get('status', 'normal')
+            sc = GREEN if status == 'normal' else (RED if status in ['high','abnormal'] else ORANGE)
+            table_data.append([
+                f.get('parameter', ''),
+                f.get('value', ''),
+                f.get('normal_range', ''),
+                status.upper(),
+                f.get('interpretation', '')[:60],
+            ])
+        findings_table = Table(table_data, colWidths=[3.5*cm, 3*cm, 3.5*cm, 2*cm, 5*cm])
+        findings_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), TEAL),
+            ('TEXTCOLOR', (0,0), (-1,0), DARK),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,-1), 8),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor('#112030'), colors.HexColor('#0d1825')]),
+            ('TEXTCOLOR', (0,1), (-1,-1), colors.HexColor('#e2eaf4')),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#1a3040')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('PADDING', (0,0), (-1,-1), 6),
+            ('WORDWRAP', (4,1), (4,-1), True),
+        ]))
+        story.append(findings_table)
+        story.append(Spacer(1, 10))
+
+    # Medications
+    if medications:
+        story.append(Paragraph("💊 Possible Medications", h2_style))
+        for m in medications:
+            story.append(Paragraph(f"<b>{m.get('name','')}</b> — {m.get('purpose','')}", body_style))
+            if m.get('note'):
+                story.append(Paragraph(f"⚠️ {m['note']}", small_style))
+        story.append(Spacer(1, 8))
+
+    # Precautions
+    if precautions:
+        story.append(Paragraph("⚠️ Precautions", h2_style))
+        for p in precautions:
+            story.append(Paragraph(f"<b>{p.get('title','')}</b>: {p.get('description','')}", body_style))
+        story.append(Spacer(1, 8))
+
+    # Prevention
+    if prevention:
+        story.append(Paragraph("🛡️ Prevention", h2_style))
+        for p in prevention:
+            story.append(Paragraph(f"<b>{p.get('title','')}</b>: {p.get('description','')}", body_style))
+        story.append(Spacer(1, 8))
+
+    # Lifestyle
+    if lifestyle:
+        story.append(Paragraph("🌿 Lifestyle Advice", h2_style))
+        for l in lifestyle:
+            story.append(Paragraph(f"<b>[{l.get('category','')}]</b> {l.get('advice','')}", body_style))
+        story.append(Spacer(1, 8))
+
+    # When to see doctor
+    if doctor_signs:
+        story.append(Paragraph("🚨 When to See a Doctor", h2_style))
+        for sign in doctor_signs:
+            story.append(Paragraph(f"• {sign}", body_style))
+        story.append(Spacer(1, 8))
+
+    # Disclaimer
+    story.append(HRFlowable(width="100%", thickness=1, color=GREY, spaceAfter=8))
+    disclaimer = raw.get('disclaimer', 'This analysis is for informational purposes only and does not replace professional medical advice. Always consult a qualified healthcare provider.')
+    story.append(Paragraph(f"⚠️ Disclaimer: {disclaimer}", small_style))
+    story.append(Paragraph("Generated by MediReport — medireport.app", small_style))
+
+    doc.build(story)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/pdf')
+    filename = f"MediReport_{report.title.replace(' ','_')[:30]}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

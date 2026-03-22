@@ -1,164 +1,333 @@
-{% extends 'base.html' %}
-{% block title %}MediReport — AI-Powered Medical Report Analysis{% endblock %}
-{% block extra_css %}
-<style>
-.hero {
-    min-height: calc(100vh - 64px);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 4rem 2rem; position: relative; overflow: hidden;
-}
-.hero::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(0,200,255,0.08) 0%, transparent 70%),
-                radial-gradient(ellipse 40% 40% at 20% 70%, rgba(0,255,157,0.05) 0%, transparent 60%);
-    pointer-events: none;
-}
-.hero-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0,200,255,0.1); border: 1px solid rgba(0,200,255,0.3);
-    color: var(--accent); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem;
-    font-weight: 600; margin-bottom: 2rem; animation: fadeUp 0.6s ease;
-}
-.hero h1 {
-    font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 700; line-height: 1.1;
-    margin-bottom: 1.5rem; animation: fadeUp 0.7s ease;
-}
-.hero h1 span {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-.hero p {
-    font-size: 1.1rem; color: var(--text-muted); max-width: 600px;
-    margin-bottom: 2.5rem; animation: fadeUp 0.8s ease; line-height: 1.8;
-}
-.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; animation: fadeUp 0.9s ease; }
-.hero-actions .btn { font-size: 1rem; padding: 14px 28px; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediReport — AI-Powered Medical Report Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg:     #050b14;
+            --accent: #00c8ff;
+            --accent2:#00ff9d;
+            --warn:   #ffb347;
+            --text:   #e2eaf4;
+            --muted:  rgba(255,255,255,0.45);
+            --dim:    rgba(255,255,255,0.2);
+            --border: rgba(255,255,255,0.08);
+            --glass:  rgba(255,255,255,0.04);
+            --font:   'Sora', sans-serif;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-.features { padding: 6rem 2rem; max-width: 1200px; margin: 0 auto; }
-.features h2 { text-align: center; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-.features-subtitle { text-align: center; color: var(--text-muted); margin-bottom: 3rem; }
-.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-.feature-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
-    padding: 2rem; transition: all 0.3s; position: relative; overflow: hidden;
-}
-.feature-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0; transition: opacity 0.3s;
-}
-.feature-card:hover { border-color: rgba(0,200,255,0.3); transform: translateY(-4px); }
-.feature-card:hover::before { opacity: 1; }
-.feature-icon { font-size: 2.5rem; margin-bottom: 1rem; }
-.feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
-.feature-card p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.7; }
+        /* Blobs */
+        .blob { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
+        .b1 { width:500px;height:500px;background:rgba(0,200,255,0.07);top:-150px;left:80px; }
+        .b2 { width:400px;height:400px;background:rgba(0,255,157,0.05);bottom:-80px;right:150px; }
+        .b3 { width:300px;height:300px;background:rgba(0,150,255,0.06);top:300px;right:60px; }
 
-.report-types { padding: 4rem 2rem; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-.report-types h2 { text-align: center; font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem; }
-.types-grid { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 900px; margin: 0 auto; }
-.type-chip {
-    padding: 10px 18px; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 30px; font-size: 0.875rem; font-weight: 500; color: var(--text-muted);
-    transition: all 0.2s;
-}
-.type-chip:hover { border-color: var(--accent); color: var(--accent); }
+        /* NAV */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            height: 60px;
+            background: rgba(5,11,20,0.8);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 0.5px solid var(--border);
+            display: flex; align-items: center;
+            padding: 0 3rem; gap: 1rem;
+        }
+        .nav-logo { display:flex;align-items:center;gap:10px;text-decoration:none; }
+        .nav-logo-icon {
+            width:34px;height:34px;
+            background:linear-gradient(135deg,rgba(0,200,255,0.25),rgba(0,255,157,0.15));
+            border:0.5px solid rgba(0,200,255,0.3);
+            border-radius:10px;
+            display:flex;align-items:center;justify-content:center;
+            font-size:17px;
+        }
+        .nav-logo-name { font-size:15px;font-weight:600;color:var(--text); }
+        .nav-links { display:flex;align-items:center;gap:0.5rem;margin-left:auto; }
+        .nav-links a {
+            color:var(--muted);text-decoration:none;
+            padding:7px 14px;border-radius:9px;
+            font-size:0.875rem;font-weight:500;
+            transition:all 0.2s;
+        }
+        .nav-links a:hover { color:var(--text);background:rgba(255,255,255,0.06); }
+        .nav-cta {
+            background:rgba(0,200,255,0.15) !important;
+            color:var(--accent) !important;
+            border:0.5px solid rgba(0,200,255,0.35) !important;
+            backdrop-filter:blur(12px);
+        }
+        .nav-cta:hover { background:rgba(0,200,255,0.25) !important; }
 
-.cta { padding: 6rem 2rem; text-align: center; }
-.cta h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 1rem; }
-.cta p { color: var(--text-muted); margin-bottom: 2rem; }
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center;
+            padding: 6rem 2rem 4rem;
+            position: relative; z-index: 1;
+        }
+        .hero-badge {
+            display:inline-flex;align-items:center;gap:8px;
+            background:rgba(0,200,255,0.08);
+            backdrop-filter:blur(12px);
+            border:0.5px solid rgba(0,200,255,0.2);
+            color:var(--accent);
+            padding:7px 18px;border-radius:30px;
+            font-size:0.8rem;font-weight:600;
+            margin-bottom:2rem;
+            animation:fadeUp 0.5s ease both;
+        }
+        .badge-dot { width:6px;height:6px;border-radius:50%;background:var(--accent2);animation:blink 2s infinite; }
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+        h1 {
+            font-size:clamp(2.4rem,5.5vw,4.2rem);
+            font-weight:700;line-height:1.1;
+            margin-bottom:1.5rem;
+            animation:fadeUp 0.6s ease both;
+        }
+        .grad {
+            background:linear-gradient(135deg,var(--accent),var(--accent2));
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+        }
+        .hero p {
+            font-size:1.05rem;color:var(--muted);
+            max-width:560px;margin-bottom:2.5rem;
+            line-height:1.8;animation:fadeUp 0.7s ease both;
+        }
+        .hero-btns {
+            display:flex;gap:1rem;flex-wrap:wrap;
+            justify-content:center;margin-bottom:3.5rem;
+            animation:fadeUp 0.8s ease both;
+        }
+        .btn-p {
+            display:inline-flex;align-items:center;gap:8px;
+            padding:13px 28px;border-radius:12px;
+            font-family:var(--font);font-size:0.95rem;font-weight:600;
+            text-decoration:none;transition:all 0.25s;
+            background:rgba(0,200,255,0.15);
+            color:var(--accent);
+            border:0.5px solid rgba(0,200,255,0.35);
+            backdrop-filter:blur(12px);
+        }
+        .btn-p:hover { background:rgba(0,200,255,0.25);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,200,255,0.2); }
+        .btn-o {
+            display:inline-flex;align-items:center;gap:8px;
+            padding:13px 28px;border-radius:12px;
+            font-family:var(--font);font-size:0.95rem;font-weight:600;
+            text-decoration:none;transition:all 0.25s;
+            background:rgba(255,255,255,0.04);
+            color:var(--muted);
+            border:0.5px solid rgba(255,255,255,0.1);
+            backdrop-filter:blur(12px);
+        }
+        .btn-o:hover { background:rgba(255,255,255,0.08);color:var(--text); }
+        @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 
-.stats { display: flex; justify-content: center; gap: 4rem; padding: 3rem 2rem; flex-wrap: wrap; }
-.stat { text-align: center; }
-.stat-num { font-size: 2.5rem; font-weight: 700; color: var(--accent); font-family: var(--mono); }
-.stat-label { color: var(--text-muted); font-size: 0.9rem; }
-</style>
-{% endblock %}
-{% block content %}
-<section class="hero">
-    <div class="hero-badge">✨ Powered by Google Gemini AI</div>
-    <h1>Understand Your<br><span>Medical Reports</span><br>Instantly</h1>
-    <p>Upload any medical report — blood tests, MRI scans, X-rays, and more. Our AI analyzes it in seconds and gives you clear, actionable insights in plain language.</p>
-    <div class="hero-actions">
-        <a href="{% url 'register' %}" class="btn btn-primary">
-            <i class="fas fa-rocket"></i> Get Started Free
+        /* STATS */
+        .stats {
+            display:flex;gap:3rem;flex-wrap:wrap;
+            justify-content:center;
+            animation:fadeUp 0.9s ease both;
+        }
+        .stat-num { font-size:2rem;font-weight:700;color:var(--accent);font-family:'Sora',sans-serif; }
+        .stat-lbl { font-size:0.78rem;color:var(--dim);margin-top:2px; }
+
+        /* FEATURES */
+        .section { padding:5rem 3rem;max-width:1200px;margin:0 auto;position:relative;z-index:1; }
+        .eyebrow { font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.75rem;text-align:center; }
+        .section-title { font-size:2rem;font-weight:700;text-align:center;margin-bottom:0.5rem; }
+        .section-sub { font-size:0.95rem;color:var(--muted);text-align:center;margin-bottom:3rem; }
+
+        .feat-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem; }
+        .feat-card {
+            background:rgba(255,255,255,0.03);
+            backdrop-filter:blur(20px);
+            -webkit-backdrop-filter:blur(20px);
+            border:0.5px solid rgba(255,255,255,0.07);
+            border-radius:16px;padding:1.75rem;
+            transition:all 0.3s;position:relative;overflow:hidden;
+        }
+        .feat-card::before {
+            content:'';position:absolute;top:0;left:0;right:0;height:1px;
+            background:linear-gradient(90deg,transparent,var(--fc),transparent);
+            opacity:0;transition:opacity 0.3s;
+        }
+        .feat-card:hover { border-color:rgba(255,255,255,0.12);transform:translateY(-3px); }
+        .feat-card:hover::before { opacity:1; }
+        .feat-emoji { font-size:2.2rem;margin-bottom:1rem;display:block; }
+        .feat-card h3 { font-size:1rem;font-weight:600;margin-bottom:0.5rem; }
+        .feat-card p { font-size:0.875rem;color:var(--muted);line-height:1.7; }
+
+        /* TYPES */
+        .types-section {
+            padding:4rem 3rem;
+            background:rgba(255,255,255,0.02);
+            backdrop-filter:blur(10px);
+            border-top:0.5px solid rgba(255,255,255,0.05);
+            border-bottom:0.5px solid rgba(255,255,255,0.05);
+            position:relative;z-index:1;
+        }
+        .types-inner { max-width:900px;margin:0 auto; }
+        .chips { display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center; }
+        .chip {
+            padding:9px 16px;
+            background:rgba(255,255,255,0.03);
+            backdrop-filter:blur(8px);
+            border:0.5px solid rgba(255,255,255,0.08);
+            border-radius:30px;font-size:0.85rem;
+            color:var(--muted);transition:all 0.2s;
+        }
+        .chip:hover { border-color:rgba(0,200,255,0.3);color:var(--accent);background:rgba(0,200,255,0.05); }
+
+        /* CTA */
+        .cta { padding:6rem 3rem;text-align:center;max-width:700px;margin:0 auto;position:relative;z-index:1; }
+        .cta h2 { font-size:2.2rem;font-weight:700;margin-bottom:1rem; }
+        .cta p { color:var(--muted);margin-bottom:2rem;font-size:1rem; }
+        .cta-note { margin-top:1.5rem;font-size:0.78rem;color:rgba(255,255,255,0.18); }
+
+        /* FOOTER */
+        footer {
+            padding:2rem 3rem;
+            border-top:0.5px solid rgba(255,255,255,0.05);
+            text-align:center;font-size:0.8rem;
+            color:rgba(255,255,255,0.2);
+            position:relative;z-index:1;
+        }
+
+        @media(max-width:768px){
+            nav { padding:0 1.25rem; }
+            .nav-links .hide-mob { display:none; }
+            .section { padding:3rem 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+
+    <nav>
+        <a href="/" class="nav-logo">
+            <div class="nav-logo-icon">🏥</div>
+            <span class="nav-logo-name">MediReport</span>
         </a>
-        <a href="{% url 'login' %}" class="btn btn-outline">
-            <i class="fas fa-sign-in-alt"></i> Sign In
-        </a>
-    </div>
-</section>
+        <div class="nav-links">
+            <a href="#features" class="hide-mob">Features</a>
+            <a href="#reports" class="hide-mob">Reports</a>
+            <a href="{% url 'wiki_home' %}" class="hide-mob">Wiki</a>
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'register' %}" class="nav-cta">Get Started</a>
+        </div>
+    </nav>
 
-<div class="stats">
-    <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Report Types Supported</div></div>
-    <div class="stat"><div class="stat-num">AI</div><div class="stat-label">Powered by Gemini</div></div>
-    <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">MediBot Support</div></div>
-    <div class="stat"><div class="stat-num">Free</div><div class="stat-label">To Get Started</div></div>
-</div>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge">
+            <div class="badge-dot"></div>
+            Powered by Google Gemini AI + Local ML
+        </div>
+        <h1>Understand Your<br><span class="grad">Medical Reports</span><br>Instantly</h1>
+        <p>Upload any medical report — blood tests, MRI, X-rays and more. Our AI analyzes it in seconds and gives you clear, actionable insights in plain language.</p>
+        <div class="hero-btns">
+            <a href="{% url 'register' %}" class="btn-p">🚀 Get Started Free</a>
+            <a href="{% url 'login' %}" class="btn-o">Sign In →</a>
+        </div>
+        <div class="stats">
+            <div style="text-align:center"><div class="stat-num">50+</div><div class="stat-lbl">Report Types</div></div>
+            <div style="text-align:center"><div class="stat-num">89.7%</div><div class="stat-lbl">ML Accuracy</div></div>
+            <div style="text-align:center"><div class="stat-num">100%</div><div class="stat-lbl">Offline Capable</div></div>
+            <div style="text-align:center"><div class="stat-num">Free</div><div class="stat-lbl">To Get Started</div></div>
+        </div>
+    </section>
 
-<section class="features">
-    <h2>Everything You Need</h2>
-    <p class="features-subtitle">A complete platform for understanding your health</p>
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">🔬</div>
-            <h3>Universal Report Analysis</h3>
-            <p>From blood tests to MRI scans, our AI can analyze any type of medical report with high accuracy. Upload PDFs or images.</p>
+    <!-- FEATURES -->
+    <section class="section" id="features">
+        <div class="eyebrow">Everything you need</div>
+        <h2 class="section-title">A Complete Health Platform</h2>
+        <p class="section-sub">Not just a report reader — a full health intelligence system</p>
+        <div class="feat-grid">
+            <div class="feat-card" style="--fc:#00c8ff">
+                <span class="feat-emoji">🔬</span>
+                <h3>Universal Report Analysis</h3>
+                <p>From blood tests to MRI scans, our ML model analyzes any medical report and explains every parameter in plain language.</p>
+            </div>
+            <div class="feat-card" style="--fc:#00ff9d">
+                <span class="feat-emoji">💊</span>
+                <h3>Medication & Precaution Guide</h3>
+                <p>Get possible medication suggestions, precautions, prevention tips, and lifestyle advice tailored to your results.</p>
+            </div>
+            <div class="feat-card" style="--fc:#ffb347">
+                <span class="feat-emoji">🩺</span>
+                <h3>AI Symptom Checker</h3>
+                <p>Enter your symptoms and the ML engine matches them to 20+ conditions with urgency scoring and specialist recommendations.</p>
+            </div>
+            <div class="feat-card" style="--fc:#b088ff">
+                <span class="feat-emoji">🤖</span>
+                <h3>MediBot AI Chat</h3>
+                <p>Hybrid chatbot — Gemini API for smart answers with a local TF-IDF ML fallback. Works even without internet.</p>
+            </div>
+            <div class="feat-card" style="--fc:#00c8ff">
+                <span class="feat-emoji">📚</span>
+                <h3>Medical Wiki</h3>
+                <p>18 detailed articles across 12 categories — diseases, medications, vitamins, and medical terms. All offline.</p>
+            </div>
+            <div class="feat-card" style="--fc:#00ff9d">
+                <span class="feat-emoji">📄</span>
+                <h3>PDF Report Download</h3>
+                <p>Download your full AI analysis as a professional PDF — findings, medications, precautions in one document.</p>
+            </div>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">💊</div>
-            <h3>Medication Insights</h3>
-            <p>Get information about potential medications based on your report findings. Always with a reminder to consult your doctor.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">🛡️</div>
-            <h3>Precautions & Prevention</h3>
-            <p>Understand what precautions to take and how to prevent health issues from worsening or occurring in the future.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">🤖</div>
-            <h3>MediBot AI Assistant</h3>
-            <p>Have questions? Chat with MediBot anytime. It understands your reports and answers health questions in plain language.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h3>Risk Assessment</h3>
-            <p>Get a clear risk level assessment (Low/Medium/High/Critical) so you know exactly how urgently to act on your results.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">🔒</div>
-            <h3>Secure & Private</h3>
-            <p>Your medical data is encrypted and stored securely. Only you can access your reports and analysis results.</p>
-        </div>
-    </div>
-</section>
+    </section>
 
-<section class="report-types">
-    <h2>Supports All Report Types</h2>
-    <div class="types-grid">
-        <span class="type-chip">🩸 Blood Tests (CBC, LFT, KFT)</span>
-        <span class="type-chip">🫀 ECG / EKG</span>
-        <span class="type-chip">🦴 X-Ray Reports</span>
-        <span class="type-chip">🧠 MRI Scans</span>
-        <span class="type-chip">🔍 CT Scans</span>
-        <span class="type-chip">💧 Urine Analysis</span>
-        <span class="type-chip">🧪 Lipid Profile</span>
-        <span class="type-chip">🦋 Thyroid Function</span>
-        <span class="type-chip">🫁 Pulmonary Function</span>
-        <span class="type-chip">👁️ Eye Reports</span>
-        <span class="type-chip">🧬 Genetic Tests</span>
-        <span class="type-chip">+ Many More</span>
-    </div>
-</section>
+    <!-- REPORT TYPES -->
+    <section class="types-section" id="reports">
+        <div class="types-inner">
+            <div class="eyebrow">Supports all formats</div>
+            <h2 class="section-title" style="margin-bottom:0.5rem">Works With Any Report</h2>
+            <p class="section-sub">Upload PDFs or images — our smart regex engine extracts values automatically</p>
+            <div class="chips">
+                <span class="chip">🩸 Blood Test (CBC)</span>
+                <span class="chip">🫀 ECG / EKG</span>
+                <span class="chip">🦴 X-Ray Reports</span>
+                <span class="chip">🧠 MRI Scans</span>
+                <span class="chip">🔍 CT Scans</span>
+                <span class="chip">💧 Urine Analysis</span>
+                <span class="chip">🧪 Lipid Profile</span>
+                <span class="chip">🦋 Thyroid Function</span>
+                <span class="chip">🫘 Kidney Function</span>
+                <span class="chip">🍬 Blood Sugar / HbA1c</span>
+                <span class="chip">🫁 Pulmonary Function</span>
+                <span class="chip">+ Many More</span>
+            </div>
+        </div>
+    </section>
 
-<section class="cta">
-    <h2>Ready to Understand Your Health?</h2>
-    <p>Join thousands of users who use MediReport to take control of their health journey.</p>
-    <a href="{% url 'register' %}" class="btn btn-primary" style="font-size:1rem;padding:14px 32px;">
-        <i class="fas fa-rocket"></i> Start for Free
-    </a>
-    <p style="margin-top:1.5rem;font-size:0.8rem;color:var(--text-dim);">
-        ⚠️ MediReport is for informational purposes only and does not replace professional medical advice.
-    </p>
-</section>
-{% endblock %}
+    <!-- CTA -->
+    <section class="cta">
+        <h2>Ready to Take Control<br>of Your Health?</h2>
+        <p>Join MediReport today — understand your reports, check symptoms, and ask MediBot anything. All free, all private.</p>
+        <a href="{% url 'register' %}" class="btn-p" style="font-size:1rem;padding:14px 36px">🚀 Start for Free</a>
+        <p class="cta-note">⚠️ MediReport is for informational purposes only and does not replace professional medical advice.</p>
+    </section>
+
+    <footer>
+        <p>© 2025 MediReport · Built with Python Django + ML · Your data stays private</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}{{ article.title }} — Medical Wiki{% endblock %}
+{% block extra_css %}
+<style>
+.wiki-breadcrumb { display: flex; gap: 8px; align-items: center; margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--text-muted); flex-wrap: wrap; }
+.wiki-breadcrumb a { color: var(--accent); text-decoration: none; }
+.wiki-breadcrumb a:hover { text-decoration: underline; }
+.article-header { margin-bottom: 2rem; }
+.article-type-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; background: rgba(0,200,255,0.1); color: var(--accent); border: 1px solid rgba(0,200,255,0.3); }
+.article-title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.2; }
+.article-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.article-meta span { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.article-layout { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; }
+@media (max-width: 1000px) { .article-layout { grid-template-columns: 1fr; } }
+.article-toc { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; position: sticky; top: 80px; height: fit-content; }
+.toc-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem; }
+.toc-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; text-decoration: none; color: var(--text-muted); font-size: 0.85rem; transition: all 0.2s; }
+.toc-item:hover { background: var(--surface2); color: var(--accent); }
+.wiki-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem; }
+.wiki-section-title { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; color: var(--text); }
+.wiki-section-body { font-size: 0.9rem; color: var(--text-muted); line-height: 1.8; white-space: pre-line; }
+.overview-section { background: linear-gradient(135deg, rgba(0,200,255,0.06), rgba(0,255,157,0.03)); border-color: rgba(0,200,255,0.2); }
+.overview-section .wiki-section-body { color: var(--text); font-size: 0.95rem; }
+.tags-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 1rem; }
+.tag { padding: 3px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 0.75rem; color: var(--text-muted); }
+.related-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; text-decoration: none; color: inherit; display: block; margin-bottom: 0.5rem; transition: all 0.2s; font-size: 0.875rem; }
+.related-card:hover { border-color: rgba(0,200,255,0.3); color: var(--accent); }
+.disclaimer-box { background: rgba(255,179,71,0.08); border: 1px solid rgba(255,179,71,0.25); border-radius: 12px; padding: 1rem 1.25rem; margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="main-content">
+    <div class="wiki-breadcrumb">
+        <a href="{% url 'wiki_home' %}">📚 Wiki</a> →
+        {% if article.category %}<a href="{% url 'wiki_category' article.category.slug %}">{{ article.category.icon }} {{ article.category.name }}</a> →{% endif %}
+        <span>{{ article.title }}</span>
+    </div>
+
+    <div class="article-layout">
+        <div>
+            <div class="article-header">
+                <div class="article-type-badge">{{ article.icon }} {{ article.get_article_type_display }}</div>
+                <div class="article-title">{{ article.title }}</div>
+                <div class="article-meta">
+                    {% if article.category %}<span><i class="fas fa-folder"></i> {{ article.category.name }}</span>{% endif %}
+                    <span><i class="fas fa-calendar"></i> {{ article.updated_at|date:"M d, Y" }}</span>
+                </div>
+                {% if article.get_tags_list %}
+                <div class="tags-row">
+                    {% for tag in article.get_tags_list %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Overview -->
+            <div class="wiki-section overview-section">
+                <div class="wiki-section-title">📋 Overview</div>
+                <div class="wiki-section-body">{{ article.overview }}</div>
+            </div>
+
+            <!-- Symptoms -->
+            {% if article.symptoms %}
+            <div class="wiki-section" id="symptoms">
+                <div class="wiki-section-title">🤒 Symptoms</div>
+                <div class="wiki-section-body">{{ article.symptoms }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Causes -->
+            {% if article.causes %}
+            <div class="wiki-section" id="causes">
+                <div class="wiki-section-title">🔍 Causes</div>
+                <div class="wiki-section-body">{{ article.causes }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Risk Factors -->
+            {% if article.risk_factors %}
+            <div class="wiki-section" id="risk">
+                <div class="wiki-section-title">⚠️ Risk Factors</div>
+                <div class="wiki-section-body">{{ article.risk_factors }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Treatments -->
+            {% if article.treatments %}
+            <div class="wiki-section" id="treatments">
+                <div class="wiki-section-title">🏥 Treatments</div>
+                <div class="wiki-section-body">{{ article.treatments }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Medications -->
+            {% if article.medications %}
+            <div class="wiki-section" id="medications">
+                <div class="wiki-section-title">💊 Medications</div>
+                <div class="wiki-section-body">{{ article.medications }}</div>
+                <p style="font-size:0.78rem;color:var(--accent3);margin-top:0.75rem">⚠️ Medications listed are informational only. Never take any medication without a doctor's prescription.</p>
+            </div>
+            {% endif %}
+
+            <!-- Prevention -->
+            {% if article.prevention %}
+            <div class="wiki-section" id="prevention">
+                <div class="wiki-section-title">🛡️ Prevention</div>
+                <div class="wiki-section-body">{{ article.prevention }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Lifestyle Tips -->
+            {% if article.lifestyle_tips %}
+            <div class="wiki-section" id="lifestyle">
+                <div class="wiki-section-title">🌿 Lifestyle Tips</div>
+                <div class="wiki-section-body">{{ article.lifestyle_tips }}</div>
+            </div>
+            {% endif %}
+
+            <!-- When to See Doctor -->
+            {% if article.when_to_see_doctor %}
+            <div class="wiki-section" id="doctor" style="border-color:rgba(255,107,107,0.2);background:rgba(255,107,107,0.04)">
+                <div class="wiki-section-title" style="color:var(--accent3)">🚨 When to See a Doctor</div>
+                <div class="wiki-section-body">{{ article.when_to_see_doctor }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Related Tests -->
+            {% if article.related_tests %}
+            <div class="wiki-section" id="tests">
+                <div class="wiki-section-title">🔬 Related Tests</div>
+                <div class="wiki-section-body">{{ article.related_tests }}</div>
+            </div>
+            {% endif %}
+
+            <div class="disclaimer-box">
+                <strong>⚠️ Medical Disclaimer:</strong> This article is for informational and educational purposes only. It does not constitute medical advice, diagnosis, or treatment. Always consult a qualified healthcare professional for any medical condition.
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div>
+            <div class="article-toc">
+                <div class="toc-title">📑 Contents</div>
+                <a href="#" class="toc-item">📋 Overview</a>
+                {% if article.symptoms %}<a href="#symptoms" class="toc-item">🤒 Symptoms</a>{% endif %}
+                {% if article.causes %}<a href="#causes" class="toc-item">🔍 Causes</a>{% endif %}
+                {% if article.risk_factors %}<a href="#risk" class="toc-item">⚠️ Risk Factors</a>{% endif %}
+                {% if article.treatments %}<a href="#treatments" class="toc-item">🏥 Treatments</a>{% endif %}
+                {% if article.medications %}<a href="#medications" class="toc-item">💊 Medications</a>{% endif %}
+                {% if article.prevention %}<a href="#prevention" class="toc-item">🛡️ Prevention</a>{% endif %}
+                {% if article.lifestyle_tips %}<a href="#lifestyle" class="toc-item">🌿 Lifestyle Tips</a>{% endif %}
+                {% if article.when_to_see_doctor %}<a href="#doctor" class="toc-item">🚨 When to See Doctor</a>{% endif %}
+                {% if article.related_tests %}<a href="#tests" class="toc-item">🔬 Related Tests</a>{% endif %}
+            </div>
+
+            {% if related %}
+            <div class="article-toc" style="margin-top:1rem">
+                <div class="toc-title">🔗 Related Articles</div>
+                {% for rel in related %}
+                <a href="{% url 'wiki_article' rel.slug %}" class="related-card">
+                    {{ rel.icon }} {{ rel.title }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="article-toc" style="margin-top:1rem;text-align:center">
+                <div class="toc-title">🤖 Have Questions?</div>
+                <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.75rem">Ask MediBot about this condition</p>
+                <button onclick="toggleMedibot()" class="btn btn-outline btn-sm" style="width:100%;justify-content:center">
+                    <i class="fas fa-robot"></i> Ask MediBot
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

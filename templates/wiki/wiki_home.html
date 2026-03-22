@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Medical Wiki — MediReport{% endblock %}
+{% block extra_css %}
+<style>
+.wiki-hero {
+    background: linear-gradient(135deg, rgba(0,200,255,0.08), rgba(0,255,157,0.05));
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem; text-align: center; margin-bottom: 2rem;
+}
+.wiki-hero h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+.wiki-hero p { color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem; }
+.wiki-search-bar {
+    display: flex; gap: 0.75rem; max-width: 600px; margin: 0 auto;
+}
+.wiki-search-bar input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 18px; color: var(--text);
+    font-family: var(--font); font-size: 0.95rem; outline: none;
+    transition: border-color 0.2s;
+}
+.wiki-search-bar input:focus { border-color: var(--accent); }
+.wiki-stats { display: flex; gap: 2rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
+.wiki-stat { text-align: center; }
+.wiki-stat-num { font-size: 1.8rem; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+.wiki-stat-label { font-size: 0.8rem; color: var(--text-muted); }
+.section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; }
+.type-nav { display: flex; gap: 0.75rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.type-btn {
+    padding: 10px 20px; border-radius: 10px; text-decoration: none;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-muted); font-size: 0.875rem; font-weight: 600;
+    transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+}
+.type-btn:hover { border-color: var(--accent); color: var(--accent); }
+.categories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+.category-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.25rem; text-decoration: none; color: inherit; transition: all 0.25s; display: block;
+}
+.category-card:hover { border-color: rgba(0,200,255,0.3); transform: translateY(-2px); }
+.cat-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+.cat-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem; }
+.cat-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+.cat-count { font-size: 0.72rem; color: var(--accent); margin-top: 0.5rem; font-weight: 600; }
+.featured-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.featured-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.25rem; text-decoration: none; color: inherit; transition: all 0.25s; display: block;
+}
+.featured-card:hover { border-color: rgba(0,200,255,0.3); transform: translateY(-2px); }
+.featured-icon { font-size: 1.75rem; margin-bottom: 0.75rem; }
+.featured-type { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin-bottom: 0.5rem; }
+.featured-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+.featured-overview { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="wiki-hero">
+    <h1>📚 Medical Wiki</h1>
+    <p>Your complete offline reference for diseases, medical terms, medications, vitamins, and health conditions — all based on WHO/NIH standards.</p>
+    <form class="wiki-search-bar" action="{% url 'wiki_search' %}">
+        <input type="text" name="q" placeholder="Search diseases, symptoms, medications..." autofocus>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+    </form>
+    <div class="wiki-stats">
+        <div class="wiki-stat"><div class="wiki-stat-num">{{ total_articles }}</div><div class="wiki-stat-label">Articles</div></div>
+        <div class="wiki-stat"><div class="wiki-stat-num">{{ diseases }}</div><div class="wiki-stat-label">Diseases</div></div>
+        <div class="wiki-stat"><div class="wiki-stat-num">{{ terms }}</div><div class="wiki-stat-label">Medical Terms</div></div>
+        <div class="wiki-stat"><div class="wiki-stat-num">{{ drugs }}</div><div class="wiki-stat-label">Medications</div></div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="type-nav">
+        <a href="{% url 'wiki_type' 'disease' %}" class="type-btn">🏥 Diseases & Conditions</a>
+        <a href="{% url 'wiki_type' 'term' %}" class="type-btn">📖 Medical Terms</a>
+        <a href="{% url 'wiki_type' 'drug' %}" class="type-btn">💊 Drugs & Medications</a>
+    </div>
+
+    <div class="section-title">🗂️ Browse by Category</div>
+    <div class="categories-grid">
+        {% for cat in categories %}
+        <a href="{% url 'wiki_category' cat.slug %}" class="category-card">
+            <div class="cat-icon">{{ cat.icon }}</div>
+            <div class="cat-name">{{ cat.name }}</div>
+            <div class="cat-desc">{{ cat.description }}</div>
+            <div class="cat-count">{{ cat.articles.count }} article{{ cat.articles.count|pluralize }}</div>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if featured %}
+    <div class="section-title">⭐ Featured Articles</div>
+    <div class="featured-grid">
+        {% for article in featured %}
+        <a href="{% url 'wiki_article' article.slug %}" class="featured-card">
+            <div class="featured-icon">{{ article.icon }}</div>
+            <div class="featured-type">{{ article.get_article_type_display }}</div>
+            <div class="featured-title">{{ article.title }}</div>
+            <div class="featured-overview">{{ article.overview|truncatewords:25 }}</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

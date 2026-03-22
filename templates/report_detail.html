@@ -102,6 +102,7 @@
             {% if report.file %}
             <a href="{{ report.file.url }}" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-file-alt"></i> View File</a>
             {% endif %}
+            <a href="{% url 'download_report_pdf' report.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-file-pdf"></i> Download PDF</a>
             <a href="{% url 'delete_report' report.pk %}" class="btn btn-sm" style="background:rgba(255,107,107,0.15);color:var(--accent3);border:1px solid rgba(255,107,107,0.3)"><i class="fas fa-trash"></i> Delete</a>
         </div>
     </div>

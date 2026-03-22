@@ -2,147 +2,228 @@
 {% block title %}Dashboard — MediReport{% endblock %}
 {% block extra_css %}
 <style>
-.page-header { margin-bottom: 2rem; }
-.page-header h1 { font-size: 1.8rem; font-weight: 700; }
-.page-header p { color: var(--text-muted); margin-top: 0.25rem; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-.stat-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 1.5rem; display: flex; align-items: center; gap: 1rem; transition: all 0.2s;
+.page-header { margin-bottom: 1.75rem; }
+.page-header h1 { font-size: 1.6rem; font-weight: 600; color: var(--text); }
+.page-header p  { font-size: 0.875rem; color: var(--muted); margin-top: 3px; }
+
+/* Stats */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:1.75rem; }
+.stat-glass {
+    background: var(--glass2);
+    backdrop-filter: var(--blur);
+    border: 0.5px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 1.1rem 1.25rem;
+    position: relative; overflow: hidden;
+    transition: all 0.25s;
 }
-.stat-card:hover { border-color: rgba(0,200,255,0.3); transform: translateY(-2px); }
-.stat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-.stat-icon.blue { background: rgba(0,200,255,0.15); }
-.stat-icon.green { background: rgba(0,255,157,0.15); }
-.stat-icon.orange { background: rgba(255,179,71,0.15); }
-.stat-icon.red { background: rgba(255,107,107,0.15); }
-.stat-info h3 { font-size: 1.8rem; font-weight: 700; line-height: 1; }
-.stat-info p { color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; }
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-.section-header h2 { font-size: 1.1rem; font-weight: 700; }
-.report-table { width: 100%; border-collapse: collapse; }
-.report-table th { text-align: left; padding: 12px 16px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
-.report-table td { padding: 14px 16px; border-bottom: 1px solid rgba(26,48,64,0.5); font-size: 0.875rem; }
-.report-table tr:last-child td { border-bottom: none; }
-.report-table tr:hover td { background: rgba(255,255,255,0.02); }
-.report-title { font-weight: 600; color: var(--text); }
-.report-date { color: var(--text-muted); font-size: 0.8rem; }
-.empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
-.empty-state .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
-.empty-state h3 { color: var(--text); margin-bottom: 0.5rem; }
-.quick-upload {
-    background: linear-gradient(135deg, rgba(0,200,255,0.1), rgba(0,255,157,0.05));
-    border: 1px dashed rgba(0,200,255,0.4); border-radius: 20px;
-    padding: 2.5rem; text-align: center; margin-bottom: 2rem;
-    cursor: pointer; transition: all 0.3s;
+.stat-glass::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1.5px;
+    background: linear-gradient(90deg, transparent, var(--stat-color), transparent);
+    opacity: 0.7;
 }
-.quick-upload:hover { border-color: var(--accent); background: rgba(0,200,255,0.12); }
-.quick-upload h3 { margin: 1rem 0 0.5rem; font-size: 1.1rem; }
-.quick-upload p { color: var(--text-muted); font-size: 0.875rem; }
-.upload-icon { font-size: 3rem; }
+.stat-glass:hover { border-color: var(--border2); transform: translateY(-2px); }
+.stat-icon { font-size: 1.5rem; margin-bottom: 0.6rem; }
+.stat-num  { font-size: 2rem; font-weight: 600; color: var(--stat-color); line-height:1; margin-bottom:4px; font-family: var(--mono); }
+.stat-lbl  { font-size: 0.78rem; color: var(--muted); }
+
+/* Grid layout */
+.dash-grid { display:grid; grid-template-columns:1fr 320px; gap:1.25rem; margin-bottom:1.25rem; }
+@media(max-width:1000px){ .dash-grid { grid-template-columns:1fr; } }
+
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.card-title  { font-size:0.875rem; font-weight:600; color:rgba(255,255,255,0.65); }
+.card-link   { font-size:0.78rem; color:var(--accent); text-decoration:none; transition:opacity 0.2s; }
+.card-link:hover { opacity:0.75; }
+
+/* Report rows */
+.rrow { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:0.5px solid rgba(255,255,255,0.04); }
+.rrow:last-child { border-bottom:none; }
+.ricon { width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;backdrop-filter:var(--blur-sm); }
+.rname { font-size:0.82rem; color:rgba(255,255,255,0.7); margin-bottom:2px; }
+.rdate { font-size:0.72rem; color:var(--dim); }
+
+/* Upload zone */
+.upload-zone {
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: var(--r);
+    padding: 1.5rem; text-align:center;
+    transition:all 0.2s; cursor:pointer;
+    text-decoration:none; display:block;
+}
+.upload-zone:hover { border-color:rgba(0,200,255,0.35); background:rgba(0,200,255,0.03); }
+.upload-zone-icon { width:48px;height:48px;background:rgba(0,200,255,0.08);border:0.5px solid rgba(0,200,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 10px; }
+.upload-zone-title { font-size:0.875rem;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:3px; }
+.upload-zone-sub   { font-size:0.78rem;color:var(--dim); }
+
+/* Quick symptom tags */
+.qtag { display:inline-block;font-size:0.72rem;padding:4px 10px;border-radius:20px;margin:3px;background:var(--glass2);border:0.5px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.2s; }
+.qtag:hover { border-color:rgba(0,200,255,0.3);color:var(--accent); }
+
+/* Bar chart */
+.brow  { display:flex;align-items:center;gap:10px;margin-bottom:9px; }
+.blbl  { font-size:0.72rem;color:var(--dim);width:68px;flex-shrink:0; }
+.bbg   { flex:1;height:5px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden; }
+.bfill { height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1); }
+.bval  { font-size:0.72rem;color:var(--dim);width:28px;text-align:right;flex-shrink:0; }
+
+/* Wiki cards */
+.wiki-row { display:grid;grid-template-columns:repeat(4,1fr);gap:10px; }
+.wcard { background:var(--glass3);backdrop-filter:var(--blur);border:0.5px solid var(--border);border-radius:var(--r);padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all 0.2s;text-decoration:none; }
+.wcard:hover { border-color:rgba(0,200,255,0.2);background:var(--glass2);transform:translateY(-1px); }
+.wicon { width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0; }
+.wtitle { font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:2px; }
+.wcount { font-size:0.7rem;color:var(--dim); }
+
+/* Empty state */
+.empty-state { text-align:center;padding:3rem 2rem;color:var(--muted); }
+.empty-icon  { font-size:3.5rem;margin-bottom:1rem; }
 </style>
 {% endblock %}
+
 {% block content %}
 <div class="main-content">
-    <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.75rem;flex-wrap:wrap;gap:1rem">
         <div>
-            <h1>👋 Hello, {{ user.first_name|default:user.username }}!</h1>
-            <p>Here's your health dashboard — track and analyze your medical reports.</p>
+            <h1 style="font-size:1.6rem;font-weight:600;color:var(--text)">👋 Hello, {{ user.first_name|default:user.username }}!</h1>
+            <p style="font-size:0.875rem;color:var(--muted);margin-top:3px">Your health overview — everything at a glance</p>
         </div>
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-            <a href="{% url 'manual_entry' %}" class="btn btn-outline"><i class="fas fa-keyboard"></i> Enter Values Manually</a>
-            <a href="{% url 'upload_report' %}" class="btn btn-primary"><i class="fas fa-upload"></i> Upload PDF Report</a>
+            <a href="{% url 'manual_entry' %}" class="btn btn-outline btn-sm"><i class="fas fa-keyboard"></i> Manual Entry</a>
+            <a href="{% url 'upload_report' %}" class="btn btn-primary btn-sm"><i class="fas fa-upload"></i> Upload Report</a>
         </div>
     </div>
 
+    <!-- Stats -->
     <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon blue">📋</div>
-            <div class="stat-info">
-                <h3>{{ total_reports }}</h3>
-                <p>Total Reports</p>
-            </div>
+        <div class="stat-glass" style="--stat-color:#00c8ff">
+            <div class="stat-icon">📋</div>
+            <div class="stat-num">{{ total_reports }}</div>
+            <div class="stat-lbl">Total Reports</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon green">✅</div>
-            <div class="stat-info">
-                <h3>{{ completed_reports }}</h3>
-                <p>Analyzed</p>
-            </div>
+        <div class="stat-glass" style="--stat-color:#00ff9d">
+            <div class="stat-icon">✅</div>
+            <div class="stat-num">{{ completed_reports }}</div>
+            <div class="stat-lbl">Analyzed</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon orange">⏳</div>
-            <div class="stat-info">
-                <h3>{{ pending_reports }}</h3>
-                <p>Pending</p>
-            </div>
+        <div class="stat-glass" style="--stat-color:#ffb347">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-num">{{ pending_reports }}</div>
+            <div class="stat-lbl">Pending</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon red">⚠️</div>
-            <div class="stat-info">
-                <h3>{{ high_risk_reports }}</h3>
-                <p>High Risk</p>
-            </div>
+        <div class="stat-glass" style="--stat-color:#ff6b6b">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-num">{{ high_risk_reports }}</div>
+            <div class="stat-lbl">High Risk</div>
         </div>
     </div>
 
-    {% if not recent_reports %}
-    <a href="{% url 'upload_report' %}" class="quick-upload" style="display:block;text-decoration:none;color:inherit">
-        <div class="upload-icon">📂</div>
-        <h3>Upload Your First Report</h3>
-        <p>Drag & drop or click to upload. Supports PDF, JPG, PNG</p>
-        <div style="margin-top:1.5rem"><span class="btn btn-primary"><i class="fas fa-upload"></i> Upload Report</span></div>
-    </a>
-    {% endif %}
+    <!-- Main grid -->
+    <div class="dash-grid">
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
 
-    <div class="card">
-        <div class="section-header">
-            <h2>Recent Reports</h2>
-            <a href="{% url 'report_list' %}" class="btn btn-outline btn-sm">View All</a>
-        </div>
-
-        {% if recent_reports %}
-        <table class="report-table">
-            <thead>
-                <tr>
-                    <th>Report</th>
-                    <th>Type</th>
-                    <th>Risk</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
+            <!-- Recent reports -->
+            <div class="gcard">
+                <div class="card-header">
+                    <span class="card-title">Recent Reports</span>
+                    <a href="{% url 'report_list' %}" class="card-link">View all →</a>
+                </div>
+                {% if recent_reports %}
                 {% for report in recent_reports %}
-                <tr>
-                    <td>
-                        <div class="report-title">{{ report.title }}</div>
-                        {% if report.patient_name %}<div class="report-date">{{ report.patient_name }}</div>{% endif %}
-                    </td>
-                    <td><span style="color:var(--text-muted);font-size:0.8rem">{{ report.get_report_type_display }}</span></td>
-                    <td>
-                        {% if report.risk_level %}
-                        <span class="risk-badge risk-{{ report.risk_level }}">
-                            {% if report.risk_level == 'low' %}🟢{% elif report.risk_level == 'medium' %}🟡{% elif report.risk_level == 'high' %}🔴{% else %}🚨{% endif %}
-                            {{ report.risk_level|title }}
-                        </span>
-                        {% else %}—{% endif %}
-                    </td>
-                    <td><span class="status-badge status-{{ report.status }}">{{ report.status|title }}</span></td>
-                    <td><div class="report-date">{{ report.uploaded_at|date:"M d, Y" }}</div></td>
-                    <td><a href="{% url 'report_detail' report.pk %}" class="btn btn-outline btn-sm">View</a></td>
-                </tr>
+                <div class="rrow">
+                    <div class="ricon" style="background:rgba(0,200,255,0.08);border:0.5px solid rgba(0,200,255,0.12)">
+                        {% if report.report_type == 'blood_test' %}🩸
+                        {% elif report.report_type == 'thyroid' %}🦋
+                        {% elif report.report_type == 'lipid_profile' %}🫀
+                        {% elif report.report_type == 'urine_test' %}💧
+                        {% elif report.report_type == 'xray' %}🦴
+                        {% elif report.report_type == 'mri' %}🧠
+                        {% else %}📋{% endif %}
+                    </div>
+                    <div style="flex:1">
+                        <div class="rname">{{ report.title }}</div>
+                        <div class="rdate">{{ report.uploaded_at|date:"M d, Y" }} · {{ report.get_report_type_display }}</div>
+                    </div>
+                    {% if report.risk_level %}
+                    <span class="risk-badge risk-{{ report.risk_level }}">{{ report.risk_level|title }}</span>
+                    {% else %}
+                    <span class="status-badge status-{{ report.status }}">{{ report.status|title }}</span>
+                    {% endif %}
+                    <a href="{% url 'report_detail' report.pk %}" class="btn btn-outline btn-sm" style="margin-left:8px">View</a>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">📋</div>
-            <h3>No reports yet</h3>
-            <p>Upload your first medical report to get started with AI analysis.</p>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <p style="margin-bottom:1rem">No reports yet. Upload your first report!</p>
+                    <a href="{% url 'upload_report' %}" class="btn btn-primary btn-sm"><i class="fas fa-upload"></i> Upload Now</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Wiki quick access -->
+            <div>
+                <div style="font-size:0.72rem;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Medical Wiki</div>
+                <div class="wiki-row">
+                    <a href="{% url 'wiki_category' 'blood' %}" class="wcard">
+                        <div class="wicon" style="background:rgba(0,200,255,0.1)">🩸</div>
+                        <div><div class="wtitle">Blood</div><div class="wcount">4 articles</div></div>
+                    </a>
+                    <a href="{% url 'wiki_category' 'diabetes' %}" class="wcard">
+                        <div class="wicon" style="background:rgba(255,179,71,0.1)">🍬</div>
+                        <div><div class="wtitle">Diabetes</div><div class="wcount">3 articles</div></div>
+                    </a>
+                    <a href="{% url 'wiki_category' 'thyroid' %}" class="wcard">
+                        <div class="wicon" style="background:rgba(0,255,157,0.1)">🦋</div>
+                        <div><div class="wtitle">Thyroid</div><div class="wcount">3 articles</div></div>
+                    </a>
+                    <a href="{% url 'wiki_category' 'drugs' %}" class="wcard">
+                        <div class="wicon" style="background:rgba(176,136,255,0.1)">💊</div>
+                        <div><div class="wtitle">Medications</div><div class="wcount">2 articles</div></div>
+                    </a>
+                </div>
+            </div>
         </div>
-        {% endif %}
+
+        <!-- Right column -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+            <!-- Upload zone -->
+            <div class="gcard">
+                <div class="card-header">
+                    <span class="card-title">Upload Report</span>
+                </div>
+                <a href="{% url 'upload_report' %}" class="upload-zone">
+                    <div class="upload-zone-icon">📄</div>
+                    <div class="upload-zone-title">Drop your report here</div>
+                    <div class="upload-zone-sub">PDF, JPG, PNG · Max 10MB</div>
+                </a>
+                <a href="{% url 'upload_report' %}" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px">
+                    <i class="fas fa-brain"></i> Analyze with ML
+                </a>
+            </div>
+
+            <!-- Quick symptom check -->
+            <div class="gcard">
+                <div class="card-header">
+                    <span class="card-title">Quick Symptom Check</span>
+                    <a href="{% url 'symptom_checker' %}" class="card-link">Full →</a>
+                </div>
+                <div>
+                    <span class="qtag">fatigue</span>
+                    <span class="qtag">headache</span>
+                    <span class="qtag">fever</span>
+                    <span class="qtag">nausea</span>
+                    <span class="qtag">chest pain</span>
+                    <span class="qtag">dizziness</span>
+                    <span class="qtag">joint pain</span>
+                    <span class="qtag">cough</span>
+                </div>
+                <a href="{% url 'symptom_checker' %}" class="btn" style="width:100%;justify-content:center;margin-top:10px;background:rgba(255,179,71,0.1);color:var(--warn);border:0.5px solid rgba(255,179,71,0.3)">
+                    🩺 Check Symptoms
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
